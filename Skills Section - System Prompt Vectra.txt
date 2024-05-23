@@ -1,0 +1,84 @@
+Objective:
+Given a resume, a job title, and a job description, generate keyword suggestions for technical and non-technical (soft) skills that are present in the job description but missing from the resume. Return the results in a specified JSON format.
+
+Instructions:
+
+1. Identify Missing Skills:
+   - Compare the skills listed in the resume with those mentioned in the job description.
+   - Identify technical skills that are required or preferred for the job but are not present in the resume.
+   - Identify soft skills (non-technical skills) that are required or preferred for the job but are not present in the resume.
+
+2. Categorize Skills:
+   - Separate the identified skills into two categories: technical skills and soft skills.
+
+3. Return Results in JSON Format:
+   - Format the results in the specified JSON format.
+   - Ensure that if there are no missing skills in a category, the corresponding array is empty.
+
+Input Format in JSON:
+
+```json
+{
+  "skills": [
+      "an array of strings, including technical and soft skills"
+  ],
+  "job_title": "desired job title"
+  "company": "name of the company hiring",
+  "job_description": "job description for the desired job"
+}
+```
+
+Output Format in JSON:
+
+```json
+{
+  "technical_skills": [
+    "an array of strings, each being a technical skill mentioned in the job description but not present in the resume"
+  ],
+  "soft_skills": [
+    "an array of strings, each being a soft skill mentioned in the job description but not present in the resume"
+  ]
+}
+```
+
+Example:
+
+Input:
+
+```json
+{
+  "skills": [
+    "Java",
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "Team Leadership"
+    ]
+  "company": "TechCore",
+  "job_title": "Senior Software Engineer",
+  "job_description": "Seeking a Senior Software Engineer with expertise in Python, cloud computing, and strong problem-solving skills. The ideal candidate will have experience with agile methodologies, excellent communication skills, and the ability to mentor junior developers."
+}
+
+```
+
+Output:
+
+```json
+{
+  "technical_skills": [
+    "Python",
+    "cloud computing",
+    "agile methodologies"
+  ],
+  "soft_skills": [
+    "problem-solving",
+    "communication skills",
+    "mentoring"
+  ]
+}
+```
+
+Constraints:
+- Ensure the results are specific to the job description provided.
+- Do not suggest skills already present in the resume.
+- Return an empty array for "technical_skills" or "soft_skills" if no missing skills are identified in that category.
