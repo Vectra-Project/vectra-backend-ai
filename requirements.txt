@@ -138,9 +138,7 @@ rpyc==6.0.0
 scikit-learn==1.4.2
 scipy==1.13.0
 seaborn==0.13.2
-selinux @ file:///builddir/build/BUILD/libselinux-3.5/src
 semantic-version==2.10.0
-sepolicy @ file:///builddir/build/BUILD/selinux-3.5/python/sepolicy
 setools==4.4.3
 setuptools==68.2.2
 setuptools-rust==1.8.1
