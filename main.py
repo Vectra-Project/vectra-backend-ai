@@ -46,7 +46,7 @@ async def enhance_experience(experiences_input_json: Experiences):
             {"role": "user", "content": experiences_input},
         ],
     )
-    return {"updated_experience": response.choices[0].message.content}
+    return json.loads(response.choices[0].message.content)
 
 
 @app.post("/suggest_skills")
@@ -67,4 +67,4 @@ async def suggest_skills(resume_json: Resume):
             {"role": "user", "content": resume},
         ],
     )
-    return {"suggested_skills": response.choices[0].message.content}
+    return json.loads(response.choices[0].message.content)
