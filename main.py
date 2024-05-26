@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile
 from openai import OpenAI
 from pydantic import BaseModel
-from typing import List
+from typing import BinaryIO, List
 from dotenv import load_dotenv
 import json
+from mindee import Client, product
 
 load_dotenv()
 
@@ -68,3 +69,20 @@ async def suggest_skills(resume_json: Resume):
         ],
     )
     return json.loads(response.choices[0].message.content)
+
+
+@app.post("/resume_to_json")
+async def test_resume_upload(resume_file: UploadFile):
+    resume_binary = await resume_file.read()
+    resume_json = cv_to_json(resume_binary)
+    return resume_json
+
+
+def cv_to_json(resume_binary: BinaryIO):
+    mindee_client = Client()
+    resume = mindee_client.source_from_bytes(resume_binary, "Resume.pdf")
+    result = mindee_client.enqueue_and_parse(
+        product.ResumeV1,
+        resume,
+    )
+    return result.document
