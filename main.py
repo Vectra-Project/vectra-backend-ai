@@ -14,7 +14,7 @@ client = OpenAI()
 async def enhance_experience(experiences_input_json: Experiences):
     experiences_input = json.dumps(experiences_input_json.model_dump())
 
-    file_path = "./Experience Section - System Prompt Vectra.txt"
+    file_path = "./system_prompts/Experience Section - System Prompt Vectra.txt"
     with open(file_path, "r") as file:
         experience_system_prompt_json = file.read()
     experience_system_prompt = json.dumps(experience_system_prompt_json)
@@ -35,7 +35,7 @@ async def enhance_experience(experiences_input_json: Experiences):
 async def suggest_skills(resume_json: Resume):
     resume = json.dumps(resume_json.model_dump())
 
-    file_path = "./Skills Section - System Prompt Vectra.txt"
+    file_path = "./system_prompts/Skills Section - System Prompt Vectra.txt"
     with open(file_path, "r") as file:
         skills_system_prompt_json = file.read()
     skills_system_prompt = json.dumps(skills_system_prompt_json)
