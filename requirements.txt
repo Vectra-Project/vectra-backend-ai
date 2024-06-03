@@ -1,5 +1,8 @@
 fastapi==0.111.0
 mindee==4.6.0
-openai==1.30.3
-pydantic==2.7.1
+openai==1.30.5
+pydantic==2.7.3
 python-dotenv==1.0.1
+python_bcrypt==0.3.2
+pytz==2024.1
+SQLAlchemy==2.0.25
