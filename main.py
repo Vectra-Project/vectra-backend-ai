@@ -1,14 +1,26 @@
 from datetime import datetime
 import uuid
-from fastapi.responses import JSONResponse
 from openai import OpenAI
 from dotenv import load_dotenv
 import json
 from lib import cv_to_json, Experiences, Resume
-from fastapi import FastAPI, HTTPException, status, Request, Response, UploadFile
-from orm import User, create_session, delete_session, get_session, db
-from auth import UserInfo, UserLogin, generate_password_hash, check_password
-
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    status,
+    Response,
+    UploadFile,
+)
+from orm import User, db
+from auth import (
+    UserInfo,
+    UserLogin,
+    authenticate_user,
+    create_access_token,
+    generate_password_hash,
+    get_current_user,
+)
 
 load_dotenv()
 
@@ -34,7 +46,10 @@ async def enhance_experience(experiences_input_json: Experiences):
             {"role": "user", "content": experiences_input},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    if content is None:
+        content = ""
+    return json.loads(content)
 
 
 @app.post("/suggest_skills")
@@ -55,7 +70,10 @@ async def suggest_skills(resume_json: Resume):
             {"role": "user", "content": resume},
         ],
     )
-    return json.loads(response.choices[0].message.content)
+    content = response.choices[0].message.content
+    if content is None:
+        content = ""
+    return json.loads(content)
 
 
 @app.post("/resume_to_json")
@@ -72,6 +90,7 @@ async def sign_up(response: Response, user_info: UserInfo):
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already exists",
         )
+
     user_info.password = generate_password_hash(user_info.password)
 
     new_user = User(
@@ -83,51 +102,29 @@ async def sign_up(response: Response, user_info: UserInfo):
         created_at=datetime.now(),
     )
     db.add(new_user)
-    session_id = create_session(new_user.user_id)
-    response.set_cookie("session_id", session_id, httponly=True, max_age=3600)
     db.commit()
-    return {"message": "User registered successfully"}
+    access_token = create_access_token(data={"sub": new_user.email})
+    response.headers["Authorization"] = f"Bearer {access_token}"
+    return status.HTTP_200_OK
 
 
-@app.post("/login")
+@app.post("/token")
 async def login(response: Response, login_body: UserLogin):
-    user = User.get_by_email(login_body.email)
+    user = await authenticate_user(login_body.email, login_body.password)
     if not user:
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Email or password is incorrect",
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Bearer"},
         )
-    if not check_password(login_body.password, user.password):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Email or password is incorrect",
-        )
-
-    session_id = create_session(user.user_id)
-    response.set_cookie("session_id", session_id, httponly=True, max_age=3600)
-    return JSONResponse(content={"message": "Login successful"})
-
-
-@app.post("/logout")
-def logout(request: Request, response: Response):
-    session_id = request.cookies.get("session_id")
-    if session_id:
-        delete_session(session_id)
-        response.delete_cookie("session_id")
-    return JSONResponse(content={"message": "Logout successful"})
+    access_token = create_access_token(data={"sub": user.email})
+    response.headers["Authorization"] = f"Bearer {access_token}"
+    return status.HTTP_200_OK
 
 
 @app.get("/protected")
-def protected_route(request: Request):
-    session_id = request.cookies.get("session_id")
-    if not session_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    user = get_session(session_id) if session_id else None
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    print(user)
-    return {"message": f"Hello {user['first_name']} {user['last_name']}"}
+def protected_route(json_user: str = Depends(get_current_user)):
+    current_user = json.loads(json_user)
+    return {
+        "message": f"Hello {current_user['first_name']} {current_user['last_name']}"
+    }
