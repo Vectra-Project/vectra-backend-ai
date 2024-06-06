@@ -17,7 +17,7 @@ engine = create_engine(os.getenv("DATABASE_URL", ""))
 
 Base = declarative_base()
 
-ACCESS_TOKEN_EXPIRE_HOURS = 1
+ACCESS_TOKEN_EXPIRE_HOURS = 9000 # More than a year
 
 
 db_session = sessionmaker(bind=engine)
