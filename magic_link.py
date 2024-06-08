@@ -5,7 +5,7 @@ from orm import db, MagicLink, TZ
 
 
 def generate_magic_number():
-    return str(random.randint(11111, 99999))
+    return str(random.randint(111111, 999999))
 
 
 async def verify_magic_number(magic_number: str) -> bool:
