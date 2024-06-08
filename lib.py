@@ -28,3 +28,14 @@ def cv_to_json(resume_binary: bytes):
         resume,
     )
     return result.document
+
+
+def load_template(file_path):
+    with open(file_path, "r", encoding="utf-8") as file:
+        return file.read()
+
+
+def inject_variables(template, variables):
+    for key, value in variables.items():
+        template = template.replace(f"{{{key}}}", str(value))
+    return template
