@@ -1,11 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from sqlalchemy import (
+    Boolean,
     Column,
     String,
     DateTime,
     create_engine,
+    ForeignKey,
 )
-from sqlalchemy.orm import declarative_base, sessionmaker
+from sqlalchemy.orm import declarative_base, sessionmaker, relationship
 from dotenv import load_dotenv
 import os
 import pytz
@@ -17,7 +19,7 @@ engine = create_engine(os.getenv("DATABASE_URL", ""))
 
 Base = declarative_base()
 
-ACCESS_TOKEN_EXPIRE_HOURS = 9000 # More than a year
+MAGIC_LINK_EXPIRY = timedelta(hours=1)
 
 
 db_session = sessionmaker(bind=engine)
@@ -28,28 +30,49 @@ TZ = pytz.timezone("Africa/Casablanca")
 
 class User(Base):
     __tablename__ = "users"
-    user_id = Column(String, primary_key=True)
+    id = Column(String, primary_key=True)
     first_name = Column(String(50), nullable=False)
     last_name = Column(String(50), nullable=False)
-    password = Column(String(), nullable=False)
-    email = Column(String(50), nullable=False)
+    email = Column(String(50), nullable=False, unique=True)
+    verified = Column(Boolean, default=False)
     created_at = Column(DateTime, default=lambda: datetime.now(TZ))
 
+    magic_links = relationship("MagicLink", backref="user")
+
     def __repr__(self):
-        return f"User(user_id={self.user_id}, first_name={self.first_name}, last_name={self.last_name}, password={self.password}, email={self.email}, created_at={self.created_at})"
+        return f"User(id={self.id}, first_name={self.first_name}, last_name={self.last_name}, email={self.email}, created_at={self.created_at})"
 
     def to_dict(self):
         return {
-            "user_id": self.user_id,
+            "id": self.id,
             "first_name": self.first_name,
             "last_name": self.last_name,
             "email": self.email,
             "created_at": str(self.created_at),
         }
 
-    @staticmethod
-    def get_by_email(email):
-        return db.query(User).filter_by(email=email).first()
+
+class MagicLink(Base):
+    __tablename__ = "magic_links"
+    code = Column(String, primary_key=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    consumed = Column(Boolean, default=False)
+    expires_at = Column(
+        DateTime,
+        nullable=False,
+        default=lambda: datetime.now(TZ) + MAGIC_LINK_EXPIRY,
+    )
+
+    def __repr__(self):
+        return f"MagicLink(code={self.code}, user_id={self.user_id}, expires_at={self.expires_at}, consumed={self.consumed})"
+
+    def to_dict(self):
+        return {
+            "code": self.code,
+            "user_id": self.user_id,
+            "expires_at": str(self.expires_at),
+            "consumed": self.consumed,
+        }
 
 
 Base.metadata.create_all(engine)

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 import json
 from fastapi import Depends, HTTPException, Response, status
 from jose import jwt, JWTError
@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 import os
 import bcrypt
 from pydantic import BaseModel
-from orm import ACCESS_TOKEN_EXPIRE_HOURS, User, TZ
+from orm import MAGIC_LINK_EXPIRY, User, TZ, db
 from fastapi.security import OAuth2PasswordBearer
 
 load_dotenv()
@@ -17,16 +17,14 @@ ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class UserLogin(BaseModel):
-    email: str
-    password: str
-
-
 class UserInfo(BaseModel):
     first_name: str
     last_name: str
     email: str
-    password: str
+
+
+class MagicNumberBody(BaseModel):
+    magic_number: str
 
 
 def generate_password_hash(password: str) -> str:
@@ -40,7 +38,7 @@ def check_password_hash(password: str, hashed: str) -> bool:
 
 
 def create_access_token(data: dict):
-    expire = datetime.now(TZ) + timedelta(hours=ACCESS_TOKEN_EXPIRE_HOURS)
+    expire = datetime.now(TZ) + MAGIC_LINK_EXPIRY
     data.update({"exp": expire})
     encoded_jwt = jwt.encode(data, SECRET_KEY, algorithm=ALGORITHM)
 
@@ -53,15 +51,6 @@ def verify_access_token(token: str):
         return payload
     except JWTError:
         return None
-
-
-async def authenticate_user(email: str, password: str) -> User | None:
-    user = User.get_by_email(email)
-    if not user:
-        return None
-    if not check_password_hash(password, str(user.password)):
-        return None
-    return user
 
 
 def get_current_user(response: Response, token: str = Depends(oauth2_scheme)):
@@ -79,7 +68,7 @@ def get_current_user(response: Response, token: str = Depends(oauth2_scheme)):
     if datetime.fromtimestamp(payload["exp"], TZ) < datetime.now(TZ):
         raise credentials_exception
 
-    user = User.get_by_email(payload["sub"])
+    user = db.query(User).filter_by(id=payload["sub"]).first()
     if user is None:
         raise credentials_exception
 

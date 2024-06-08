@@ -12,13 +12,12 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from orm import User, db
+from magic_link import confirm_user, generate_magic_number, verify_magic_number
+from orm import MagicLink, User, db
 from auth import (
+    MagicNumberBody,
     UserInfo,
-    UserLogin,
-    authenticate_user,
     create_access_token,
-    generate_password_hash,
     get_current_user,
 )
 
@@ -84,40 +83,43 @@ async def test_resume_upload(resume_file: UploadFile):
 
 
 @app.post("/signup")
-async def sign_up(response: Response, user_info: UserInfo):
-    if User.get_by_email(user_info.email):
+async def sign_up(user_info: UserInfo):
+    if db.query(User).filter_by(email=user_info.email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail="Email already exists",
         )
 
-    user_info.password = generate_password_hash(user_info.password)
-
     new_user = User(
-        user_id=str(uuid.uuid4()),
+        id=str(uuid.uuid4()),
         first_name=user_info.first_name,
         last_name=user_info.last_name,
         email=user_info.email,
-        password=user_info.password,
+        verified=False,
         created_at=datetime.now(),
     )
+    magic_number = generate_magic_number()
+    new_magic_number = MagicLink(
+        code=magic_number,
+        user_id=new_user.id,
+        consumed=False,
+    )
     db.add(new_user)
+    db.add(new_magic_number)
     db.commit()
-    access_token = create_access_token(data={"sub": new_user.email})
-    response.headers["Authorization"] = f"Bearer {access_token}"
     return status.HTTP_200_OK
 
 
-@app.post("/token")
-async def login(response: Response, login_body: UserLogin):
-    user = await authenticate_user(login_body.email, login_body.password)
-    if not user:
+@app.post("/verify")
+async def magic_number(response: Response, magic_number: MagicNumberBody):
+    if not await verify_magic_number(magic_number.magic_number):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect email or password",
+            detail="The code you entered is incorrect or has expired.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    access_token = create_access_token(data={"sub": user.email})
+    email = await confirm_user(magic_number.magic_number)
+    access_token = create_access_token(data={"sub": email})
     response.headers["Authorization"] = f"Bearer {access_token}"
     return status.HTTP_200_OK
 
