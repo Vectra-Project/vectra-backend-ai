@@ -20,6 +20,7 @@ from auth import (
     create_access_token,
     get_current_user,
 )
+from send_magic_email import send_email_with_magic_code
 
 load_dotenv()
 
@@ -107,6 +108,7 @@ async def sign_up(user_info: UserInfo):
     db.add(new_user)
     db.add(new_magic_number)
     db.commit()
+    send_email_with_magic_code(new_user, magic_number)
     return status.HTTP_200_OK
 
 
