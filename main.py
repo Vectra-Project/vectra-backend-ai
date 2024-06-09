@@ -16,7 +16,8 @@ from magic_link import confirm_user, generate_magic_number, verify_magic_number
 from orm import MagicLink, User, db
 from auth import (
     MagicNumberBody,
-    UserInfo,
+    UserLogin,
+    UserSignup,
     create_access_token,
     get_current_user,
 )
@@ -84,7 +85,7 @@ async def test_resume_upload(resume_file: UploadFile):
 
 
 @app.post("/signup")
-async def sign_up(user_info: UserInfo):
+async def sign_up(user_info: UserSignup):
     if db.query(User).filter_by(email=user_info.email).first():
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -109,6 +110,19 @@ async def sign_up(user_info: UserInfo):
     db.add(new_magic_number)
     db.commit()
     send_email_with_magic_code(new_user, magic_number)
+    return status.HTTP_200_OK
+
+
+@app.post("/login")
+async def login(user_info: UserLogin):
+    user = db.query(User).filter_by(email=user_info.email).first()
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="The email you entered is incorrect.",
+        )
+    magic_number = generate_magic_number()
+    send_email_with_magic_code(user, magic_number)
     return status.HTTP_200_OK
 
 

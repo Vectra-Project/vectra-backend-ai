@@ -17,24 +17,18 @@ ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 
-class UserInfo(BaseModel):
+class UserSignup(BaseModel):
     first_name: str
     last_name: str
     email: str
 
 
+class UserLogin(BaseModel):
+    email: str
+
+
 class MagicNumberBody(BaseModel):
     magic_number: str
-
-
-def generate_password_hash(password: str) -> str:
-    salt = bcrypt.gensalt()
-    hashed = bcrypt.hashpw(bytes(password, "utf-8"), salt)
-    return hashed.decode("utf-8")
-
-
-def check_password_hash(password: str, hashed: str) -> bool:
-    return bcrypt.checkpw(bytes(password, "utf-8"), bytes(hashed, "utf-8"))
 
 
 def create_access_token(data: dict):
