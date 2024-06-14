@@ -13,7 +13,7 @@ resend.api_key = os.getenv("RESEND_API_KEY", "")
 html_file_path = "magic_link_template.html"
 
 
-def send_email_with_magic_code(user: User, code: str):
+def send_email_with_magic_number(user: User, code: str):
     variables = {
         "first_name": str(user.first_name),
         "last_name": str(user.last_name),

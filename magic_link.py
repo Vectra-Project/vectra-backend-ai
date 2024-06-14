@@ -8,6 +8,16 @@ def generate_magic_number():
     return str(random.randint(111111, 999999))
 
 
+def save_magic_number(user, magic_number):
+    new_magic_number = MagicLink(
+        code=magic_number,
+        user_id=user.id,
+        consumed=False,
+    )
+    db.add(new_magic_number)
+    db.commit()
+
+
 async def verify_magic_number(magic_number: str) -> bool:
     magic_number = db.query(MagicLink).filter_by(code=magic_number).first()
     if not magic_number:
@@ -17,6 +27,8 @@ async def verify_magic_number(magic_number: str) -> bool:
         or magic_number.expires_at.timestamp() < datetime.now(TZ).timestamp()
     ):
         return False
+    magic_number.consumed = True  # type: ignore
+    db.commit()
     return True
 
 
