@@ -5,9 +5,22 @@ from openai import OpenAI
 from pydantic import BaseModel
 from typing import List
 from mindee import Client, product  # type: ignore
-from auth import UserSignup
 from orm import db
 from orm import User  # type: ignore
+
+
+class UserSignup(BaseModel):
+    first_name: str
+    last_name: str
+    email: str
+
+
+class UserLogin(BaseModel):
+    email: str
+
+
+class MagicNumberBody(BaseModel):
+    magic_number: str
 
 
 class ExperienceItem(BaseModel):

@@ -4,9 +4,15 @@ from fastapi import Depends, HTTPException, Response, status
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
-import bcrypt
 from pydantic import BaseModel
-from lib import create_user, get_user, is_user_email_duplicate
+from lib import (
+    MagicNumberBody,
+    UserLogin,
+    UserSignup,
+    create_user,
+    get_user,
+    is_user_email_duplicate,
+)
 from magic_link import (
     confirm_user,
     generate_magic_number,
@@ -24,20 +30,6 @@ load_dotenv()
 SECRET_KEY: str = os.getenv("SECRET_KEY", "")
 ALGORITHM = "HS256"
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-
-class UserSignup(BaseModel):
-    first_name: str
-    last_name: str
-    email: str
-
-
-class UserLogin(BaseModel):
-    email: str
-
-
-class MagicNumberBody(BaseModel):
-    magic_number: str
 
 
 def create_access_token(data: dict):
