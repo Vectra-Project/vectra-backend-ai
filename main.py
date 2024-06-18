@@ -66,3 +66,8 @@ def protected_route(json_user: str = Depends(get_current_user)):
     return {
         "message": f"Hello {current_user['first_name']} {current_user['last_name']}"
     }
+
+
+@app.get("test")
+def test():
+    return {"message": "Hello World"}
